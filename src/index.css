@@ -1,0 +1,206 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  /* Forest green — primary brand */
+  --color-forest-50:  #f0f7f4;
+  --color-forest-100: #d4ede5;
+  --color-forest-200: #a8d9ca;
+  --color-forest-300: #74bfab;
+  --color-forest-400: #47a08a;
+  --color-forest-500: #2d816b;
+  --color-forest-600: #1f6655;
+  --color-forest-700: #1a5044;
+  --color-forest-800: #153d34;
+  --color-forest-900: #0f2d26;
+  --color-forest-950: #081a17;
+
+  /* Amber — CTA / action color */
+  --color-amber-50:  #fdf6ed;
+  --color-amber-100: #f9e8cc;
+  --color-amber-200: #f2cf97;
+  --color-amber-300: #e9b062;
+  --color-amber-400: #df9336;
+  --color-amber-500: #c8741a;
+  --color-amber-600: #a65c13;
+  --color-amber-700: #87470f;
+  --color-amber-800: #6c380d;
+  --color-amber-900: #572c0c;
+
+  /* Parchment — warm backgrounds */
+  --color-parch-50:  #fefcf8;
+  --color-parch-100: #faf4e8;
+  --color-parch-200: #f4e9d2;
+  --color-parch-300: #ebd9b8;
+  --color-parch-400: #dfc49a;
+  --color-parch-500: #ceaa78;
+  --color-parch-600: #b88d58;
+  --color-parch-700: #997141;
+  --color-parch-800: #7c5832;
+  --color-parch-900: #644428;
+
+  /* Ink — text tones */
+  --color-ink-50:  #f4f2ef;
+  --color-ink-100: #e4e0da;
+  --color-ink-200: #c8c2b8;
+  --color-ink-300: #a89e90;
+  --color-ink-400: #8a7e70;
+  --color-ink-500: #6e6254;
+  --color-ink-600: #574d40;
+  --color-ink-700: #423a2f;
+  --color-ink-800: #2f2820;
+  --color-ink-900: #1c1610;
+  --color-ink-950: #100d09;
+
+  /* Rust — error / danger */
+  --color-rust-50:  #fdf2ef;
+  --color-rust-100: #fae0d8;
+  --color-rust-200: #f4bfb0;
+  --color-rust-300: #ec9480;
+  --color-rust-400: #e16b53;
+  --color-rust-500: #d04730;
+  --color-rust-600: #ad3420;
+  --color-rust-700: #8c2818;
+  --color-rust-800: #722015;
+  --color-rust-900: #5d1b13;
+
+  /* Keep legacy aliases so old components still work */
+  --color-saffron-50:  var(--color-amber-50);
+  --color-saffron-100: var(--color-amber-100);
+  --color-saffron-200: var(--color-amber-200);
+  --color-saffron-300: var(--color-amber-300);
+  --color-saffron-400: var(--color-amber-400);
+  --color-saffron-500: var(--color-amber-500);
+  --color-saffron-600: var(--color-amber-600);
+  --color-saffron-700: var(--color-amber-700);
+  --color-saffron-800: var(--color-amber-800);
+  --color-saffron-900: var(--color-amber-900);
+
+  --color-linen-50:  var(--color-parch-50);
+  --color-linen-100: var(--color-parch-100);
+  --color-linen-200: var(--color-parch-200);
+  --color-linen-300: var(--color-parch-300);
+  --color-linen-400: var(--color-parch-400);
+  --color-linen-500: var(--color-parch-500);
+  --color-linen-600: var(--color-parch-600);
+
+  --color-earth-50:  var(--color-ink-50);
+  --color-earth-100: var(--color-ink-100);
+  --color-earth-200: var(--color-ink-200);
+  --color-earth-300: var(--color-ink-300);
+  --color-earth-400: var(--color-ink-400);
+  --color-earth-500: var(--color-ink-500);
+  --color-earth-600: var(--color-ink-600);
+  --color-earth-700: var(--color-ink-700);
+  --color-earth-800: var(--color-ink-800);
+  --color-earth-900: var(--color-ink-900);
+
+  --color-mgreen-50:  var(--color-forest-50);
+  --color-mgreen-100: var(--color-forest-100);
+  --color-mgreen-200: var(--color-forest-200);
+  --color-mgreen-300: var(--color-forest-300);
+  --color-mgreen-400: var(--color-forest-400);
+  --color-mgreen-500: var(--color-forest-500);
+  --color-mgreen-600: var(--color-forest-600);
+  --color-mgreen-700: var(--color-forest-700);
+
+  --color-burgundy-50:  var(--color-rust-50);
+  --color-burgundy-100: var(--color-rust-100);
+  --color-burgundy-200: var(--color-rust-200);
+  --color-burgundy-300: var(--color-rust-300);
+  --color-burgundy-400: var(--color-rust-400);
+  --color-burgundy-500: var(--color-rust-500);
+  --color-burgundy-600: var(--color-rust-600);
+  --color-burgundy-700: var(--color-rust-700);
+  --color-burgundy-800: var(--color-rust-800);
+
+  /* Typography */
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body:    'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-urdu:    'Noto Nastaliq Urdu', serif;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(15,11,7,0.06), 0 4px 16px rgba(15,11,7,0.04);
+  --shadow-card-hover: 0 4px 24px rgba(15,11,7,0.10), 0 1px 4px rgba(15,11,7,0.06);
+  --shadow-panel: 0 8px 40px rgba(15,11,7,0.12);
+}
+
+/* ─── Reset ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background-color: #F5EFE4;
+  color: var(--color-ink-950);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root { min-height: 100vh; }
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  line-height: 1.2;
+}
+
+/* ─── Urdu text ──────────────────────────────────── */
+.urdu {
+  font-family: var(--font-urdu);
+  direction: rtl;
+  line-height: 2;
+}
+
+/* ─── Scrollbar ──────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: #F0EAE0; }
+::-webkit-scrollbar-thumb { background: #C8BBA8; border-radius: 3px; }
+
+/* ─── Focus ──────────────────────────────────────── */
+:focus-visible { outline: 2px solid var(--color-forest-600); outline-offset: 2px; }
+
+/* ─── Marquee ────────────────────────────────────── */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.marquee-track { animation: marquee 38s linear infinite; }
+.marquee-track:hover { animation-play-state: paused; }
+
+/* ─── Grain texture ──────────────────────────────── */
+.grain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ─── Typography helpers ─────────────────────────── */
+.display-xl {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+
+.display-lg {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+}
+
+/* ─── Diagonal rule decoration ───────────────────── */
+.rule-decor {
+  width: 2px;
+  height: 40px;
+  background: linear-gradient(to bottom, transparent, currentColor, transparent);
+  opacity: 0.3;
+}
