@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { authApi } from '../api/auth'
 
 const AuthContext = createContext(null)
 
@@ -6,23 +7,25 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  // Restore from localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem('user')
+    const stored = localStorage.getItem('rasad_user')
     if (stored) {
-      try { setUser(JSON.parse(stored)) } catch { localStorage.removeItem('user') }
+      try { setUser(JSON.parse(stored)) } catch { localStorage.removeItem('rasad_user') }
     }
     setLoading(false)
   }, [])
 
-  const login = (userData) => {
+  const login = useCallback((userData) => {
     setUser(userData)
-    localStorage.setItem('user', JSON.stringify(userData))
-  }
+    localStorage.setItem('rasad_user', JSON.stringify(userData))
+  }, [])
 
-  const logout = () => {
+  const logout = useCallback(async () => {
+    try { await authApi.logout() } catch { /* ignore */ }
     setUser(null)
-    localStorage.removeItem('user')
-  }
+    localStorage.removeItem('rasad_user')
+  }, [])
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout }}>

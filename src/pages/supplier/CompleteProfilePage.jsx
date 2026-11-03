@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { MapPin, Store, ArrowRight, SkipForward } from 'lucide-react'
 import Button from '../../components/ui/Button'
 import Input, { Textarea } from '../../components/ui/Input'
+import { suppliersApi } from '../../api/suppliers'
 
 export default function CompleteProfilePage() {
   const navigate = useNavigate()
   const [form, setForm] = useState({ businessName: '', market: '', address: '', bio: '' })
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState({})
+  const [apiError, setApiError] = useState('')
 
   const set = (f) => (e) => setForm(prev => ({ ...prev, [f]: e.target.value }))
 
@@ -23,10 +25,15 @@ export default function CompleteProfilePage() {
 
   const handleSave = async () => {
     if (!validate()) return
-    setSaving(true)
-    await new Promise(r => setTimeout(r, 800))
-    setSaving(false)
-    navigate('/supplier/dashboard')
+    setSaving(true); setApiError('')
+    try {
+      await suppliersApi.create(form)
+      navigate('/supplier/dashboard')
+    } catch (err) {
+      setApiError(err.message)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -64,6 +71,12 @@ export default function CompleteProfilePage() {
             placeholder="Your products, years in business, specialties..."
             value={form.bio} onChange={set('bio')} rows={3} />
         </div>
+
+        {apiError && (
+          <div className="mt-4 p-3 bg-rust-50 border border-rust-200 rounded-lg text-xs text-rust-700">
+            {apiError}
+          </div>
+        )}
 
         <div className="flex gap-3 mt-5">
           <Button variant="secondary" onClick={() => navigate('/supplier/dashboard')}
