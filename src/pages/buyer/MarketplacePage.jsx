@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, MapPin, ArrowUpRight, X } from 'lucide-react'
+import { Search, MapPin, ArrowUpRight, X, Camera } from 'lucide-react'
+import { predictCategory, matchCategory, fileToImage, MIN_CONFIDENCE } from '../../lib/categoryModel'
 import Layout from '../../components/layout/Layout'
 import Badge from '../../components/ui/Badge'
 import ProductImage from '../../components/ui/ProductImage'
@@ -65,6 +66,31 @@ export default function MarketplacePage() {
   const [activeCategory, setActiveCategory] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [photoNote, setPhotoNote] = useState('')
+  const [analyzing, setAnalyzing] = useState(false)
+  const photoRef = useRef()
+
+  const handlePhoto = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setAnalyzing(true); setPhotoNote('')
+    try {
+      const img = await fileToImage(file)
+      const { label, probability } = await predictCategory(img)
+      const match = probability >= MIN_CONFIDENCE ? matchCategory(label, categories) : null
+      if (match) {
+        setActiveCategory(match._id)
+        setPhotoNote(`Detected: ${label} (${Math.round(probability * 100)}%)`)
+      } else {
+        setPhotoNote("Couldn't recognise this photo, try a clearer one")
+      }
+    } catch {
+      setPhotoNote("Couldn't recognise this photo, try a clearer one")
+    } finally {
+      setAnalyzing(false)
+    }
+  }
 
   const fetchAll = useCallback(async () => {
     setLoading(true); setError('')
@@ -133,11 +159,31 @@ export default function MarketplacePage() {
                 className="w-full bg-white/95 text-ink-950 placeholder-ink-400 rounded-xl pl-11 pr-12 py-3.5 text-sm font-body focus:outline-none focus:ring-2 focus:ring-amber-400 border border-white/30"
               />
               {search && (
-                <button onClick={() => setSearch('')} className="absolute right-3.5 text-ink-400 hover:text-ink-700 transition-colors">
+                <button onClick={() => setSearch('')} className="absolute right-12 text-ink-400 hover:text-ink-700 transition-colors">
                   <X size={15} />
                 </button>
               )}
+              <input type="file" accept="image/*" ref={photoRef} className="hidden" onChange={handlePhoto} />
+              <button type="button" onClick={() => photoRef.current?.click()} disabled={analyzing}
+                title="Search by photo" aria-label="Search by photo"
+                className="absolute right-3.5 text-ink-400 hover:text-ink-700 transition-colors disabled:opacity-50">
+                <Camera size={17} />
+              </button>
             </div>
+            {(analyzing || photoNote) && (
+              <div className="mt-3">
+                {analyzing ? (
+                  <span className="text-xs text-white/70">Analyzing photo...</span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-xs bg-white/95 text-ink-700 rounded-full pl-3 pr-2 py-1">
+                    {photoNote}
+                    <button onClick={() => setPhotoNote('')} aria-label="Dismiss" className="text-ink-400 hover:text-ink-700">
+                      <X size={12} />
+                    </button>
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-6 mt-8 flex-wrap">

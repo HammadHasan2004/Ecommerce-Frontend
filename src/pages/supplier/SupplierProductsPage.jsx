@@ -10,6 +10,7 @@ import { PageLoader, PageError } from '../../components/ui/PageState'
 import { suppliersApi } from '../../api/suppliers'
 import { productsApi } from '../../api/products'
 import { categoriesApi } from '../../api/categories'
+import { predictCategory, matchCategory, fileToImage, MIN_CONFIDENCE } from '../../lib/categoryModel'
 
 const UNITS = ['meter', 'kg', 'dozen', 'carton', 'sq.ft', 'gross', 'piece']
 
@@ -22,6 +23,8 @@ function ProductFormModal({ product, categories, onClose, onSave, saving, saveEr
   )
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
+  const [detecting, setDetecting] = useState(false)
+  const [detectHint, setDetectHint] = useState('')
   const fileRef = useRef()
 
   const set = (f) => (e) => setForm(prev => ({ ...prev, [f]: e.target.value }))
@@ -31,6 +34,26 @@ function ProductFormModal({ product, categories, onClose, onSave, saving, saveEr
     if (!file) return
     setImageFile(file)
     setImagePreview(URL.createObjectURL(file))
+    detectCategory(file)
+  }
+
+  const detectCategory = async (file) => {
+    setDetecting(true); setDetectHint('')
+    try {
+      const img = await fileToImage(file)
+      const { label, probability } = await predictCategory(img)
+      const match = probability >= MIN_CONFIDENCE ? matchCategory(label, categories) : null
+      if (match) {
+        setForm(prev => (prev.category ? prev : { ...prev, category: match._id }))
+        setDetectHint(`Detected: ${label} (${Math.round(probability * 100)}%). Change it if wrong.`)
+      } else {
+        setDetectHint("Couldn't detect a category, please choose one.")
+      }
+    } catch {
+      // model unavailable: form keeps working as before
+    } finally {
+      setDetecting(false)
+    }
   }
 
   const handleSubmit = () => {
@@ -71,14 +94,19 @@ function ProductFormModal({ product, categories, onClose, onSave, saving, saveEr
             value={form.name} onChange={set('name')} />
 
           {!isEdit && (
-            <div className="grid grid-cols-2 gap-3">
-              <Select label="Category *" value={form.category} onChange={set('category')}>
-                <option value="">Select category</option>
-                {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
-              </Select>
-              <Select label="Unit *" value={form.unit} onChange={set('unit')}>
-                {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-              </Select>
+            <div>
+              <div className="grid grid-cols-2 gap-3">
+                <Select label="Category *" value={form.category} onChange={set('category')}>
+                  <option value="">Select category</option>
+                  {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+                </Select>
+                <Select label="Unit *" value={form.unit} onChange={set('unit')}>
+                  {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                </Select>
+              </div>
+              {(detecting || detectHint) && (
+                <p className="text-xs text-ink-500 mt-1.5">{detecting ? 'Analyzing photo...' : detectHint}</p>
+              )}
             </div>
           )}
 

@@ -29,7 +29,9 @@ export default function ProductImage({ imageUrl, category, className = '', iconS
   }
 
   const name = typeof category === 'object' ? category?.name : category
-  const cfg = CATEGORY_CONFIGS[name] || CATEGORY_CONFIGS['Fabric']
+  const lower = name?.toLowerCase() || ''
+  const key = Object.keys(CATEGORY_CONFIGS).find(k => lower.startsWith(k.toLowerCase().split(' ')[0]))
+  const cfg = CATEGORY_CONFIGS[key] || CATEGORY_CONFIGS['Fabric']
 
   return (
     <div
