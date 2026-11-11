@@ -7,6 +7,7 @@ const variants = {
   rust:      'bg-rust-100 text-rust-700 border border-rust-200',
   pending:   'bg-[#FFF7E6] text-[#8F5E1A] border border-[#F5D68A]',
   confirmed: 'bg-amber-100 text-amber-700 border border-amber-200',
+  shipped:   'bg-sky-100 text-sky-700 border border-sky-200',
   delivered: 'bg-forest-100 text-forest-800 border border-forest-200',
   cancelled: 'bg-rust-100 text-rust-700 border border-rust-200',
   /* legacy aliases */
@@ -32,6 +33,7 @@ export function StatusBadge({ status }) {
   const dot = {
     pending:   'bg-[#D4893A]',
     confirmed: 'bg-amber-500',
+    shipped:   'bg-sky-500',
     delivered: 'bg-forest-600',
     cancelled: 'bg-rust-500',
   }

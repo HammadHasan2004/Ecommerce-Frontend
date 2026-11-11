@@ -10,7 +10,8 @@ import { ordersApi } from '../../api/orders'
 
 const STATUS_TRANSITIONS = {
   pending:   ['confirmed', 'cancelled'],
-  confirmed: ['delivered'],
+  confirmed: ['shipped', 'cancelled'],
+  shipped:   ['delivered'],
   delivered: [],
   cancelled: [],
 }
@@ -21,6 +22,9 @@ export default function SupplierOrdersPage() {
   const [error, setError] = useState('')
   const [expanded, setExpanded] = useState(null)
   const [updating, setUpdating] = useState(null)
+  const [shipFormFor, setShipFormFor] = useState(null)
+  const [shipFields, setShipFields] = useState({ courierName: '', trackingNumber: '' })
+  const [shipError, setShipError] = useState('')
 
   useEffect(() => {
     ordersApi.supplierOrders()
@@ -29,16 +33,43 @@ export default function SupplierOrdersPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  const updateStatus = async (orderId, newStatus) => {
+  const openShipForm = (orderId) => {
+    setShipFormFor(orderId)
+    setShipFields({ courierName: '', trackingNumber: '' })
+    setShipError('')
+  }
+
+  const updateStatus = async (orderId, newStatus, extra = {}) => {
     setUpdating(orderId + newStatus)
     try {
-      await ordersApi.updateStatus(orderId, newStatus)
-      setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status: newStatus } : o))
+      const updated = await ordersApi.updateStatus(orderId, newStatus, extra)
+      // Merge only these fields; spreading the response would overwrite the populated buyer.
+      setOrders(prev => prev.map(o => o._id === orderId ? {
+        ...o,
+        status: updated?.status ?? newStatus,
+        courierName: updated?.courierName ?? o.courierName,
+        trackingNumber: updated?.trackingNumber ?? o.trackingNumber,
+        statusHistory: updated?.statusHistory ?? o.statusHistory,
+      } : o))
+      return true
     } catch (err) {
       alert(err.message)
+      return false
     } finally {
       setUpdating(null)
     }
+  }
+
+  const confirmShipped = async (orderId) => {
+    const courierName = shipFields.courierName.trim()
+    const trackingNumber = shipFields.trackingNumber.trim()
+    if (!courierName || !trackingNumber) {
+      setShipError('Courier name and tracking number are required')
+      return
+    }
+    setShipError('')
+    const ok = await updateStatus(orderId, 'shipped', { courierName, trackingNumber })
+    if (ok) setShipFormFor(null)
   }
 
   if (loading) return (
@@ -108,6 +139,15 @@ export default function SupplierOrdersPage() {
 
                   {isOpen && (
                     <div className="border-t border-[#EDE5D8] bg-[#FAFAF7]">
+                      <div className="px-5 py-3 border-b border-[#EDE5D8] text-sm">
+                        <span className="font-semibold text-ink-700">Deliver to: </span>
+                        <span className="text-ink-600 whitespace-pre-line">{order.deliveryAddress || 'Not provided'}</span>
+                        {(order.courierName || order.trackingNumber) && (
+                          <div className="text-xs text-ink-500 mt-1">
+                            Courier: {order.courierName || '—'} · Tracking #: {order.trackingNumber || '—'}
+                          </div>
+                        )}
+                      </div>
                       <div className="divide-y divide-[#EDE5D8]">
                         {(order.items || []).map((item, i) => (
                           <div key={i} className="flex items-center gap-4 px-5 py-3">
@@ -136,11 +176,43 @@ export default function SupplierOrdersPage() {
                               size="sm"
                               variant={status === 'cancelled' ? 'danger' : status === 'delivered' ? 'success' : 'primary'}
                               loading={updating === order._id + status}
-                              onClick={() => updateStatus(order._id, status)}
+                              onClick={() => status === 'shipped' ? openShipForm(order._id) : updateStatus(order._id, status)}
                             >
                               Mark {status}
                             </Button>
                           ))}
+                        </div>
+                      )}
+
+                      {shipFormFor === order._id && (
+                        <div className="px-5 py-4 border-t border-[#EDE5D8] space-y-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-semibold text-ink-700 mb-1">Courier name</label>
+                              <input
+                                type="text"
+                                value={shipFields.courierName}
+                                onChange={e => setShipFields(f => ({ ...f, courierName: e.target.value }))}
+                                className="w-full bg-[#FEFCF8] border border-[#DDD5C4] rounded-lg px-3 py-2 text-sm text-ink-950 placeholder-ink-400 focus:outline-none focus:ring-2 focus:ring-forest-400"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-ink-700 mb-1">Tracking number</label>
+                              <input
+                                type="text"
+                                value={shipFields.trackingNumber}
+                                onChange={e => setShipFields(f => ({ ...f, trackingNumber: e.target.value }))}
+                                className="w-full bg-[#FEFCF8] border border-[#DDD5C4] rounded-lg px-3 py-2 text-sm text-ink-950 placeholder-ink-400 focus:outline-none focus:ring-2 focus:ring-forest-400"
+                              />
+                            </div>
+                          </div>
+                          {shipError && <p className="text-xs text-rust-600">{shipError}</p>}
+                          <div className="flex gap-2">
+                            <Button size="sm" loading={updating === order._id + 'shipped'} onClick={() => confirmShipped(order._id)}>
+                              Confirm shipped
+                            </Button>
+                            <Button size="sm" variant="secondary" onClick={() => setShipFormFor(null)}>Cancel</Button>
+                          </div>
                         </div>
                       )}
                     </div>

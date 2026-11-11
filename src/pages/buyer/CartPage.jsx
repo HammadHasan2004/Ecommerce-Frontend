@@ -14,6 +14,7 @@ export default function CartPage() {
   const [placing, setPlacing] = useState(false)
   const [placed, setPlaced] = useState(false)
   const [error, setError] = useState('')
+  const [address, setAddress] = useState('')
 
   const handleQtyChange = (item, delta) => {
     const newQty = item.qty + delta * item.product.minOrder
@@ -23,10 +24,14 @@ export default function CartPage() {
   }
 
   const handleCheckout = async () => {
+    if (!address.trim()) {
+      setError('Please enter a delivery address')
+      return
+    }
     setPlacing(true); setError('')
     try {
       const orderItems = items.map(i => ({ productId: i.product._id, quantity: i.qty }))
-      await ordersApi.create(orderItems)
+      await ordersApi.create(orderItems, address.trim())
       clearCart()
       setPlaced(true)
       setTimeout(() => navigate('/orders'), 1500)
@@ -142,6 +147,21 @@ export default function CartPage() {
                   <span className="font-semibold text-ink-800">Total</span>
                   <span className="font-display font-bold text-lg text-ink-950">Rs {total.toLocaleString()}</span>
                 </div>
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="delivery-address" className="block text-sm font-semibold text-ink-800 mb-1.5">
+                  Delivery address <span className="text-rust-600">*</span>
+                </label>
+                <textarea
+                  id="delivery-address"
+                  value={address}
+                  onChange={e => setAddress(e.target.value)}
+                  placeholder="House / street, area, city"
+                  rows={3}
+                  required
+                  className="w-full bg-[#FEFCF8] border border-[#DDD5C4] rounded-xl p-3 text-sm text-ink-950 placeholder-ink-400 focus:outline-none focus:ring-2 focus:ring-forest-400 resize-none"
+                />
               </div>
 
               {error && (

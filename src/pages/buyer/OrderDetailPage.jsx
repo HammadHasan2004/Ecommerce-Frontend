@@ -121,6 +121,34 @@ export default function OrderDetailPage() {
           <StatusBadge status={order.status} />
         </div>
 
+        <div className="mb-6 space-y-1 text-sm text-ink-600">
+          {order.deliveryAddress && (
+            <div><span className="font-semibold text-ink-700">Deliver to:</span> {order.deliveryAddress}</div>
+          )}
+          {(order.courierName || order.trackingNumber) && (
+            <div>
+              <span className="font-semibold text-ink-700">Courier:</span> {order.courierName || '—'}
+              {' · '}
+              <span className="font-semibold text-ink-700">Tracking #:</span> {order.trackingNumber || '—'}
+            </div>
+          )}
+          {order.statusHistory?.length > 0 && (
+            <ol className="mt-3 border-l-2 border-[#DDD5C4] ml-1.5 space-y-2">
+              {order.statusHistory.map((h, i) => (
+                <li key={i} className="pl-4 relative">
+                  <span className="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-forest-600" />
+                  <span className="font-medium text-ink-800">{h.status ? h.status.charAt(0).toUpperCase() + h.status.slice(1) : ''}</span>
+                  {h.at && (
+                    <span className="text-xs text-ink-500 ml-2">
+                      {new Date(h.at).toLocaleString('en-PK', { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+
         {/* Items */}
         <Card className="mb-4 !p-0 overflow-hidden">
           <div className="px-5 py-3 border-b border-[#EDE5D8] bg-[#FAFAF7]">
