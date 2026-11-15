@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Store, ArrowRight, SkipForward } from 'lucide-react'
+import { MapPin, Store, ArrowRight, SkipForward, Wallet } from 'lucide-react'
 import Button from '../../components/ui/Button'
 import Input, { Textarea } from '../../components/ui/Input'
 import { suppliersApi } from '../../api/suppliers'
+import { WALLET_REGEX } from '../../lib/config'
 
 export default function CompleteProfilePage() {
   const navigate = useNavigate()
-  const [form, setForm] = useState({ businessName: '', market: '', address: '', bio: '' })
+  const [form, setForm] = useState({ businessName: '', market: '', address: '', bio: '', walletAddress: '' })
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState({})
   const [apiError, setApiError] = useState('')
@@ -19,6 +20,7 @@ export default function CompleteProfilePage() {
     if (!form.businessName.trim()) e.businessName = 'Required'
     if (!form.market.trim()) e.market = 'Required'
     if (!form.address.trim()) e.address = 'Required'
+    if (form.walletAddress.trim() && !WALLET_REGEX.test(form.walletAddress.trim())) e.walletAddress = 'Enter a valid wallet address (0x + 40 hex characters)'
     setErrors(e)
     return !Object.keys(e).length
   }
@@ -27,7 +29,7 @@ export default function CompleteProfilePage() {
     if (!validate()) return
     setSaving(true); setApiError('')
     try {
-      await suppliersApi.create(form)
+      await suppliersApi.create({ ...form, walletAddress: form.walletAddress.trim() })
       navigate('/supplier/dashboard')
     } catch (err) {
       setApiError(err.message)
@@ -70,6 +72,9 @@ export default function CompleteProfilePage() {
           <Textarea label="Business Bio (optional)"
             placeholder="Your products, years in business, specialties..."
             value={form.bio} onChange={set('bio')} rows={3} />
+          <Input label="MetaMask Wallet Address (optional)" placeholder="0x..."
+            hint="To receive online payments"
+            value={form.walletAddress} onChange={set('walletAddress')} icon={<Wallet size={13} />} error={errors.walletAddress} />
         </div>
 
         {apiError && (

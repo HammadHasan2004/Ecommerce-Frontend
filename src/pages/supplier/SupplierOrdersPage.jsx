@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, ExternalLink } from 'lucide-react'
 import Layout from '../../components/layout/Layout'
 import Card from '../../components/ui/Card'
-import { StatusBadge } from '../../components/ui/Badge'
+import { StatusBadge, PaymentBadge } from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
 import ProductImage from '../../components/ui/ProductImage'
 import { PageLoader, PageError } from '../../components/ui/PageState'
 import { ordersApi } from '../../api/orders'
+import { etherscanTxUrl, shortAddress } from '../../lib/config'
 
 const STATUS_TRANSITIONS = {
   pending:   ['confirmed', 'cancelled'],
@@ -15,6 +16,9 @@ const STATUS_TRANSITIONS = {
   delivered: [],
   cancelled: [],
 }
+
+const waitingForPayment = (order) =>
+  order.paymentMethod === 'metamask' && order.paymentStatus === 'unpaid'
 
 export default function SupplierOrdersPage() {
   const [orders, setOrders] = useState([])
@@ -132,6 +136,7 @@ export default function SupplierOrdersPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
+                      <PaymentBadge order={order} />
                       <StatusBadge status={order.status} />
                       <ChevronDown size={15} className={`text-ink-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                     </div>
@@ -142,6 +147,15 @@ export default function SupplierOrdersPage() {
                       <div className="px-5 py-3 border-b border-[#EDE5D8] text-sm">
                         <span className="font-semibold text-ink-700">Deliver to: </span>
                         <span className="text-ink-600 whitespace-pre-line">{order.deliveryAddress || 'Not provided'}</span>
+                        {order.paymentMethod === 'metamask' && order.paymentStatus === 'paid' && order.txHash && (
+                          <div className="text-xs text-ink-500 mt-1">
+                            Paid on-chain:{' '}
+                            <a href={etherscanTxUrl(order.txHash)} target="_blank" rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-forest-700 hover:text-forest-900 underline">
+                              {shortAddress(order.txHash)} <ExternalLink size={11} />
+                            </a>
+                          </div>
+                        )}
                         {(order.courierName || order.trackingNumber) && (
                           <div className="text-xs text-ink-500 mt-1">
                             Courier: {order.courierName || '—'} · Tracking #: {order.trackingNumber || '—'}
@@ -170,12 +184,17 @@ export default function SupplierOrdersPage() {
                       {transitions.length > 0 && (
                         <div className="px-5 py-4 border-t border-[#EDE5D8] flex gap-2 flex-wrap items-center">
                           <span className="text-xs text-ink-500 mr-1">Update:</span>
+                          {order.status === 'pending' && waitingForPayment(order) && (
+                            <span className="text-xs text-amber-700 mr-1">Waiting for buyer's payment</span>
+                          )}
                           {transitions.map(status => (
                             <Button
                               key={status}
                               size="sm"
                               variant={status === 'cancelled' ? 'danger' : status === 'delivered' ? 'success' : 'primary'}
                               loading={updating === order._id + status}
+                              disabled={status === 'confirmed' && waitingForPayment(order)}
+                              title={status === 'confirmed' && waitingForPayment(order) ? "Waiting for buyer's payment" : undefined}
                               onClick={() => status === 'shipped' ? openShipForm(order._id) : updateStatus(order._id, status)}
                             >
                               Mark {status}

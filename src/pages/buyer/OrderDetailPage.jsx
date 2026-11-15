@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { ChevronLeft, Star, X } from 'lucide-react'
+import { useParams, Link, useLocation } from 'react-router-dom'
+import { ChevronLeft, Star, X, Wallet, ExternalLink } from 'lucide-react'
 import Layout from '../../components/layout/Layout'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
-import { StatusBadge } from '../../components/ui/Badge'
+import { StatusBadge, PaymentBadge } from '../../components/ui/Badge'
 import ProductImage from '../../components/ui/ProductImage'
 import { PageLoader, PageError } from '../../components/ui/PageState'
 import { ordersApi } from '../../api/orders'
 import { reviewsApi } from '../../api/reviews'
+import { payForOrder, describePaymentError } from '../../lib/payOrder'
+import { hasMetaMask } from '../../lib/metamask'
+import { etherscanTxUrl, shortAddress } from '../../lib/config'
 
 function ReviewModal({ order, onClose, onDone }) {
   const [rating, setRating] = useState(5)
@@ -69,6 +72,9 @@ function ReviewModal({ order, onClose, onDone }) {
 
 export default function OrderDetailPage() {
   const { id } = useParams()
+  const location = useLocation()
+  const [payNotice, setPayNotice] = useState(location.state?.payNotice || '')
+  const [paying, setPaying] = useState(false)
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -95,6 +101,24 @@ export default function OrderDetailPage() {
     }
   }
 
+  const handlePayNow = async () => {
+    setPayNotice('')
+    if (!hasMetaMask()) {
+      setPayNotice('MetaMask not found. Please install the MetaMask extension from metamask.io.')
+      return
+    }
+    setPaying(true)
+    try {
+      const updated = await payForOrder(order)
+      // verify response has no items; merge over existing order so items stay
+      setOrder(prev => ({ ...prev, ...updated }))
+    } catch (err) {
+      setPayNotice(describePaymentError(err).message)
+    } finally {
+      setPaying(false)
+    }
+  }
+
   if (loading) return <Layout><PageLoader label="Loading order…" /></Layout>
   if (error)   return <Layout><PageError message={error} /></Layout>
   if (!order)  return null
@@ -118,10 +142,26 @@ export default function OrderDetailPage() {
               {new Date(order.createdAt).toLocaleDateString('en-PK', { year:'numeric', month:'long', day:'numeric' })}
             </div>
           </div>
-          <StatusBadge status={order.status} />
+          <div className="flex flex-col items-end gap-1.5">
+            <StatusBadge status={order.status} />
+            <PaymentBadge order={order} />
+          </div>
         </div>
 
+        {payNotice && (
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 break-words">{payNotice}</div>
+        )}
+
         <div className="mb-6 space-y-1 text-sm text-ink-600">
+          {order.paymentMethod === 'metamask' && order.paymentStatus === 'paid' && order.txHash && (
+            <div>
+              <span className="font-semibold text-ink-700">Transaction:</span>{' '}
+              <a href={etherscanTxUrl(order.txHash)} target="_blank" rel="noreferrer"
+                className="inline-flex items-center gap-1 text-forest-700 hover:text-forest-900 underline">
+                {shortAddress(order.txHash)} <ExternalLink size={12} />
+              </a>
+            </div>
+          )}
           {order.deliveryAddress && (
             <div><span className="font-semibold text-ink-700">Deliver to:</span> {order.deliveryAddress}</div>
           )}
@@ -183,7 +223,13 @@ export default function OrderDetailPage() {
 
         {/* Actions */}
         <div className="flex flex-col gap-3">
-          {order.status === 'pending' && (
+          {order.paymentMethod === 'metamask' && order.paymentStatus === 'unpaid' && order.status === 'pending'
+            && order.payTo && order.expectedWei && order.payData && (
+            <Button onClick={handlePayNow} loading={paying} fullWidth icon={<Wallet size={16} />}>
+              Pay now with MetaMask
+            </Button>
+          )}
+          {order.status === 'pending' && !(order.paymentMethod === 'metamask' && order.paymentStatus === 'paid') && (
             <Button variant="danger" onClick={handleCancel} loading={cancelling} fullWidth>
               Cancel Order
             </Button>

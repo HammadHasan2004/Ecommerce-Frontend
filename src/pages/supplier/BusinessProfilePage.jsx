@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { MapPin, Store, FileText, Check } from 'lucide-react'
+import { MapPin, Store, FileText, Check, Wallet } from 'lucide-react'
 import Layout from '../../components/layout/Layout'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
@@ -7,13 +7,15 @@ import Input, { Textarea } from '../../components/ui/Input'
 import Stars from '../../components/ui/Stars'
 import { PageLoader, PageError } from '../../components/ui/PageState'
 import { suppliersApi } from '../../api/suppliers'
+import { WALLET_REGEX, shortAddress } from '../../lib/config'
 
 export default function BusinessProfilePage() {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [editing, setEditing] = useState(false)
-  const [form, setForm] = useState({ businessName: '', market: '', address: '', bio: '' })
+  const [form, setForm] = useState({ businessName: '', market: '', address: '', bio: '', walletAddress: '' })
+  const [walletError, setWalletError] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -27,6 +29,7 @@ export default function BusinessProfilePage() {
           market: data.market || '',
           address: data.address || '',
           bio: data.bio || '',
+          walletAddress: data.walletAddress || '',
         })
       })
       .catch(err => setError(err.message))
@@ -36,9 +39,15 @@ export default function BusinessProfilePage() {
   const set = (f) => (e) => setForm(prev => ({ ...prev, [f]: e.target.value }))
 
   const handleSave = async () => {
+    const wallet = form.walletAddress.trim()
+    if (wallet && !WALLET_REGEX.test(wallet)) {
+      setWalletError('Enter a valid wallet address (0x + 40 hex characters)')
+      return
+    }
+    setWalletError('')
     setSaving(true); setSaveError('')
     try {
-      const updated = await suppliersApi.update(form)
+      const updated = await suppliersApi.update({ ...form, walletAddress: wallet })
       setProfile(prev => ({ ...prev, ...updated }))
       setEditing(false)
       setSaved(true)
@@ -116,12 +125,13 @@ export default function BusinessProfilePage() {
               <Input label="Market / Area" placeholder="e.g. Bolton Market" value={form.market} onChange={set('market')} icon={<MapPin size={14} />} />
               <Input label="Full Address" placeholder="Shop number, street, area" value={form.address} onChange={set('address')} icon={<MapPin size={14} />} />
               <Textarea label="Business Bio" placeholder="Tell buyers about your business, products, and specialties..." value={form.bio} onChange={set('bio')} rows={4} icon={<FileText size={14} />} />
+              <Input label="MetaMask Wallet Address (optional, to receive online payments)" placeholder="0x..." value={form.walletAddress} onChange={set('walletAddress')} icon={<Wallet size={14} />} error={walletError} />
             </div>
             {saveError && (
               <div className="mt-3 p-3 bg-rust-50 border border-rust-200 rounded-lg text-xs text-rust-700">{saveError}</div>
             )}
             <div className="flex gap-3 mt-5">
-              <Button variant="secondary" onClick={() => { setEditing(false); setSaveError('') }} className="flex-1">Cancel</Button>
+              <Button variant="secondary" onClick={() => { setEditing(false); setSaveError(''); setWalletError('') }} className="flex-1">Cancel</Button>
               <Button onClick={handleSave} loading={saving} className="flex-1">Save Changes</Button>
             </div>
           </Card>
@@ -132,6 +142,7 @@ export default function BusinessProfilePage() {
               { label: 'Market', value: form.market, icon: <MapPin size={14} /> },
               { label: 'Address', value: form.address, icon: <MapPin size={14} /> },
               { label: 'Bio', value: form.bio, icon: <FileText size={14} /> },
+              { label: 'MetaMask Wallet', value: shortAddress(form.walletAddress), icon: <Wallet size={14} /> },
             ].map(field => (
               <Card key={field.label} className="!py-3 !px-4">
                 <div className="flex items-center gap-2 text-xs font-medium text-ink-500 mb-0.5">

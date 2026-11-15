@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { ChevronRight, Package } from 'lucide-react'
 import Layout from '../../components/layout/Layout'
 import Card from '../../components/ui/Card'
-import { StatusBadge } from '../../components/ui/Badge'
+import { StatusBadge, PaymentBadge } from '../../components/ui/Badge'
 import { PageLoader, PageError, EmptyState } from '../../components/ui/PageState'
 import Button from '../../components/ui/Button'
 import { ordersApi } from '../../api/orders'
@@ -57,6 +57,7 @@ export default function MyOrdersPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
+                      <PaymentBadge order={order} />
                       <StatusBadge status={order.status} />
                       <ChevronRight size={15} className="text-ink-400 group-hover:text-forest-600 group-hover:translate-x-0.5 transition-all" />
                     </div>

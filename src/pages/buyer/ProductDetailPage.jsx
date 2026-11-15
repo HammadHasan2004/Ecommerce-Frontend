@@ -14,7 +14,8 @@ import { useCart } from '../../context/CartContext'
 
 export default function ProductDetailPage() {
   const { id } = useParams()
-  const { addItem, items } = useCart()
+  const { addItem, clearAndAdd, items } = useCart()
+  const [cartConflict, setCartConflict] = useState('')
   const [product, setProduct] = useState(null)
   const [reviews, setReviews] = useState([])
   const [related, setRelated] = useState([])
@@ -46,10 +47,22 @@ export default function ProductDetailPage() {
     return () => { cancelled = true }
   }, [id])
 
-  const handleAdd = () => {
-    addItem(product, qty)
+  const markAdded = () => {
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
+  }
+
+  const handleAdd = () => {
+    const result = addItem(product, qty)
+    if (!result.ok) { setCartConflict(result.message); return }
+    setCartConflict('')
+    markAdded()
+  }
+
+  const handleClearAndAdd = () => {
+    clearAndAdd(product, qty)
+    setCartConflict('')
+    markAdded()
   }
 
   if (loading) return <Layout><PageLoader label="Loading product…" /></Layout>
@@ -151,6 +164,15 @@ export default function ProductDetailPage() {
               </div>
               <p className="text-xs text-ink-400 mt-1.5">In increments of {min} {product.unit}</p>
             </div>
+
+            {cartConflict && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
+                <p>{cartConflict}</p>
+                <Button size="sm" variant="secondary" onClick={handleClearAndAdd} className="mt-2">
+                  Clear cart &amp; add this
+                </Button>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex gap-3">

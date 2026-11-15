@@ -7,14 +7,19 @@ import Card from '../../components/ui/Card'
 import ProductImage from '../../components/ui/ProductImage'
 import { useCart } from '../../context/CartContext'
 import { ordersApi } from '../../api/orders'
+import { PKR_PER_ETH } from '../../lib/config'
+import { hasMetaMask } from '../../lib/metamask'
+import { payForOrder, describePaymentError } from '../../lib/payOrder'
 
 export default function CartPage() {
   const { items, removeItem, addItem, clearCart, total } = useCart()
   const navigate = useNavigate()
   const [placing, setPlacing] = useState(false)
-  const [placed, setPlaced] = useState(false)
+  const [placed, setPlaced] = useState('')
   const [error, setError] = useState('')
   const [address, setAddress] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState('cod')
+  const [noWallet, setNoWallet] = useState(false)
 
   const handleQtyChange = (item, delta) => {
     const newQty = item.qty + delta * item.product.minOrder
@@ -28,15 +33,41 @@ export default function CartPage() {
       setError('Please enter a delivery address')
       return
     }
-    setPlacing(true); setError('')
+    setError(''); setNoWallet(false)
+    if (paymentMethod === 'metamask' && !hasMetaMask()) {
+      setNoWallet(true)
+      return
+    }
+    setPlacing(true)
+    const orderItems = items.map(i => ({ productId: i.product._id, quantity: i.qty }))
+
+    // 1) create the order (backend validates and, for MetaMask, returns payTo / expectedWei / payData)
+    let order
     try {
-      const orderItems = items.map(i => ({ productId: i.product._id, quantity: i.qty }))
-      await ordersApi.create(orderItems, address.trim())
-      clearCart()
-      setPlaced(true)
-      setTimeout(() => navigate('/orders'), 1500)
+      order = await ordersApi.create(orderItems, address.trim(), paymentMethod)
     } catch (err) {
       setError(err.message || 'Failed to place order. Please try again.')
+      setPlacing(false)
+      return
+    }
+
+    if (paymentMethod === 'cod') {
+      clearCart()
+      setPlaced('cod')
+      setPlacing(false)
+      setTimeout(() => navigate('/orders'), 1500)
+      return
+    }
+
+    // 2) MetaMask: pay + verify. The order already exists, so never lose it on failure.
+    try {
+      await payForOrder(order)
+      clearCart()
+      setPlaced('metamask')
+      setTimeout(() => navigate('/orders'), 1500)
+    } catch (err) {
+      clearCart()
+      navigate(`/orders/${order._id}`, { state: { payNotice: describePaymentError(err).message } })
     } finally {
       setPlacing(false)
     }
@@ -47,7 +78,9 @@ export default function CartPage() {
       <Layout>
         <div className="max-w-lg mx-auto px-4 py-20 text-center">
           <div className="text-6xl mb-4">✅</div>
-          <h2 className="font-display text-2xl font-bold text-ink-950 mb-2">Order placed!</h2>
+          <h2 className="font-display text-2xl font-bold text-ink-950 mb-2">
+            {placed === 'metamask' ? 'Payment received' : 'Order placed!'}
+          </h2>
           <p className="font-urdu text-forest-700 text-sm mb-1" dir="rtl">آرڈر مل گیا</p>
           <p className="text-ink-500 text-sm mt-2">Redirecting to your orders…</p>
         </div>
@@ -164,12 +197,51 @@ export default function CartPage() {
                 />
               </div>
 
+              <div className="mb-4 space-y-2" role="radiogroup" aria-label="Payment method">
+                {[
+                  { value: 'cod', title: 'Cash on Delivery', sub: 'Pay when your order arrives' },
+                  {
+                    value: 'metamask',
+                    title: 'Pay with MetaMask',
+                    sub: `Pay now with Sepolia test ETH (≈ ${(total / PKR_PER_ETH).toFixed(6)} ETH)`,
+                  },
+                ].map(opt => (
+                  <label
+                    key={opt.value}
+                    className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
+                      paymentMethod === opt.value
+                        ? 'border-forest-600 bg-forest-50'
+                        : 'border-[#DDD5C4] bg-[#FEFCF8] hover:border-ink-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value={opt.value}
+                      checked={paymentMethod === opt.value}
+                      onChange={() => { setPaymentMethod(opt.value); setNoWallet(false) }}
+                      className="mt-1 accent-forest-700"
+                    />
+                    <span>
+                      <span className="block text-sm font-semibold text-ink-800">{opt.title}</span>
+                      <span className="block text-xs text-ink-500 mt-0.5">{opt.sub}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+
               {error && (
                 <div className="mb-3 p-3 bg-rust-50 border border-rust-200 rounded-lg text-xs text-rust-700">{error}</div>
               )}
+              {noWallet && (
+                <div className="mb-3 p-3 bg-rust-50 border border-rust-200 rounded-lg text-xs text-rust-700">
+                  MetaMask not found. Please install the MetaMask extension from{' '}
+                  <a href="https://metamask.io" target="_blank" rel="noreferrer" className="underline font-medium">metamask.io</a>.
+                </div>
+              )}
 
               <Button fullWidth size="lg" onClick={handleCheckout} loading={placing} iconRight={<ArrowRight size={16} />}>
-                Place Order
+                {paymentMethod === 'metamask' ? 'Pay with MetaMask & Place Order' : 'Place Order'}
               </Button>
               <Link to="/marketplace" className="block text-center text-sm text-forest-700 hover:text-forest-900 mt-3 transition-colors">
                 Continue shopping

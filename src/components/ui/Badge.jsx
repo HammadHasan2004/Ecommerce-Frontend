@@ -44,3 +44,14 @@ export function StatusBadge({ status }) {
     </Badge>
   )
 }
+
+// COD / Paid via MetaMask / Awaiting payment. Old orders lack paymentMethod, so default to COD.
+export function PaymentBadge({ order }) {
+  if (!order) return null
+  if (order.paymentMethod === 'metamask') {
+    return order.paymentStatus === 'paid'
+      ? <Badge variant="forest">Paid via MetaMask</Badge>
+      : <Badge variant="amber">Awaiting payment</Badge>
+  }
+  return <Badge>COD</Badge>
+}
