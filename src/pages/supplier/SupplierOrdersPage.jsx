@@ -114,7 +114,10 @@ export default function SupplierOrdersPage() {
           <div className="space-y-4">
             {orders.map(order => {
               const isOpen = expanded === order._id
-              const transitions = STATUS_TRANSITIONS[order.status] || []
+              const paidViaMetaMask = order.paymentMethod === 'metamask' && order.paymentStatus === 'paid'
+              const allTransitions = STATUS_TRANSITIONS[order.status] || []
+              const transitions = paidViaMetaMask ? allTransitions.filter(s => s !== 'cancelled') : allTransitions
+              const cancelHidden = paidViaMetaMask && allTransitions.includes('cancelled')
               return (
                 <Card key={order._id} padding={false} className="overflow-hidden">
                   <button
@@ -184,6 +187,11 @@ export default function SupplierOrdersPage() {
                       {transitions.length > 0 && (
                         <div className="px-5 py-4 border-t border-[#EDE5D8] flex gap-2 flex-wrap items-center">
                           <span className="text-xs text-ink-500 mr-1">Update:</span>
+                          {cancelHidden && (
+                            <span className="text-xs text-ink-400 order-last w-full sm:w-auto sm:ml-auto">
+                              Paid via MetaMask — can't be cancelled online
+                            </span>
+                          )}
                           {order.status === 'pending' && waitingForPayment(order) && (
                             <span className="text-xs text-amber-700 mr-1">Waiting for buyer's payment</span>
                           )}
