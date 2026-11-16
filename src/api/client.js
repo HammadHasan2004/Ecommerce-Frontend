@@ -1,6 +1,17 @@
 // All requests go through /api (Vite proxies to http://localhost:8000)
 const BASE = '/api/v1'
 
+// Vercel's rewrite to the backend fails for trailing-slash URLs (it returns index.html),
+// so strip the trailing slash from the path part, before any query string.
+//   '/products/' -> '/products'   '/products/?search=x' -> '/products?search=x'
+function buildUrl(path) {
+  const qIndex = path.indexOf('?')
+  const pathname = qIndex === -1 ? path : path.slice(0, qIndex)
+  const query = qIndex === -1 ? '' : path.slice(qIndex)
+  const cleaned = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname
+  return `${BASE}${cleaned}${query}`
+}
+
 export class ApiError extends Error {
   constructor(message, status) {
     super(message)
@@ -13,7 +24,7 @@ export class ApiError extends Error {
 let refreshPromise = null
 
 async function doRefresh() {
-  const res = await fetch(`${BASE}/users/refresh-token`, {
+  const res = await fetch(buildUrl('/users/refresh-token'), {
     method: 'POST',
     credentials: 'include',
   })
@@ -29,7 +40,7 @@ async function execute(path, opts = {}) {
   const headers = {}
   if (body && !fd) headers['Content-Type'] = 'application/json'
 
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(buildUrl(path), {
     ...rest,
     credentials: 'include',
     headers,
@@ -46,7 +57,7 @@ async function execute(path, opts = {}) {
     }
 
     // Retry original request
-    const retry = await fetch(`${BASE}${path}`, {
+    const retry = await fetch(buildUrl(path), {
       ...rest,
       credentials: 'include',
       headers,
